@@ -1,0 +1,16 @@
+{%- macro render_domanda_form(subform, index) %}
+<div data-toggle='fieldset-entry' id="domanda-{{ index }}-form" class="card shadow {% if index != '_' %}subform{% else %}is-hidden{% endif %}" data-index="{{ index }}">
+    <div class="card-header row"'>
+        <div class='col-10 text-center'>
+            Domanda {{ index }}
+        </div>
+        <div class='col-2 text-end'>
+            <!--<button class='btn btn-danger remove'><i class="fas fa-trash-alt"></i></button>-->
+            <button class='btn btn-danger' type="button" data-toggle="fieldset-remove-row" id="questions-{{ index }}-remove"><i class="fas fa-trash-alt"></i></button>
+        </div>  
+    </div>
+    <div class="card-body">
+        {{ subform.testo }}
+    </div>
+</div>
+{%- endmacro %}
