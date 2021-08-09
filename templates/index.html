@@ -6,7 +6,6 @@
         <!-- Required meta tags -->
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-
         <!-- Font awesome -->
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous" />
         <!-- Bootstrap CSS -->
@@ -21,7 +20,6 @@
     </head>
     <body>
         <div class="container">
-
             <!-- FLASH -->
             <div class="row mx-auto">
                 <div class="container">
@@ -38,17 +36,14 @@
                 </div>
             </div>
             <!-- END FLASH -->
-
-            <div class="col form_field_outer" align='center'>
+            <div class="col" align='center'>
                 <h1>Dynamic form for flask</h1>
-
                 <!-- FORM -->
-                <form id='domande-form' method="POST" action="" role='form'>
+                <form id='domande-form' method="POST" action="">
                     {{ form.hidden_tag() }}
                     {{ form.titolo.label(class='form-label') }} {{ form.titolo(class='form-control') }}
                     <br />
-                    <!--<div id='subforms-container' class="row form_field_outer_row">-->
-                    <div class='row' data-toggle='fieldset' id='questions-fieldset'>
+                    <div id='subforms-container' class="row">
                         {% for nested in form.questions %}
                             {{ macros.render_domanda_form(_template, loop.index0) }}
                         {% endfor %}
@@ -58,9 +53,7 @@
                             {{ form.submit(class='btn btn-primary') }}
                         </div>
                         <div class="col">
-                            <!--<input type='button' name='ciao' value="Click me" id='add' class='add btn btn-success'>-->
-                            <!--<button id='add' class='btn btn-info add'><i class="fas fa-plus add_icon"></i> Aggiungi</button>-->
-                            <button class='btn btn-success' type="button" data-toggle="fieldset-add-row" data-target="#questions-fieldset"><i class="fas fa-plus add_icon"></i></button>
+                            <input type='button' name='ciao' value="Click me" id='add' class='add btn btn-success'>
                         </div>
                     </div>
                 </form>
@@ -73,7 +66,6 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
-
                 {# Form template #}
                 {{ macros.render_domanda_form(_template, '_') }}
             </div>
