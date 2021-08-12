@@ -1,138 +1,71 @@
 from flask import Flask, render_template, flash, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from sqlalchemy.orm import backref
 from wtforms import FieldList
 from wtforms import Form as NoCsrfForm
-from wtforms.fields import StringField, FormField, SubmitField
+from wtforms.fields import StringField, FormField, SubmitField, SelectField
 from wtforms import validators
-
 
 app = Flask(__name__)
 app.config.from_pyfile("app.cfg")
 db = SQLAlchemy(app)
 
 
-# DB models
-
-
-class Users(db.Model):
-    __tablename__ = "utenti"
-    id = db.Column(db.Integer(), primary_key=True)
-    nome = db.Column(db.String(64))
-    questionari = db.relationship("Questionario")
-
-    def __init__(self, nome):
-        self.nome = nome
-
-
-class Quiz(db.Model):
+# DB MODELS
+class Questionario(db.Model):
     __tablename__ = "questionari"
     id = db.Column(db.Integer(), primary_key=True)
-    title = db.Column(db.String(64))
-    user_id = db.Column(db.Integer(), db.ForeignKey("utenti.id"))
-    questions = db.relationship(
-        "Domanda", backref=db.backref("domande", collection_class=list)
-    )
-
-    def __init__(self, titolo, uid):
-        self.user_id = uid
-        self.title = titolo
+    titolo = db.Column(db.String())
+    domande = db.relationship('Domanda', backref='domande', lazy='dynamic')
 
 
-class Question(db.Model):
-    __tablename__ = "domande"
+class Domanda(db.Model):
+    __tablename__ = 'domande'
     id = db.Column(db.Integer(), primary_key=True)
-    text = db.Column(db.String(256))
-    quiz_id = db.Column(db.Integer(), db.ForeignKey("questionari.id"))
-    risposte = db.relationship("Risposta")
-
-
-class Answer(db.Model):
-    __tablename__ = "risposte"
-    id = db.Column(db.Integer(), primary_key=True)
-    testo = db.Column(db.String(256))
-    domanda_id = db.Column(db.Integer(), db.ForeignKey("domande.id"))
+    testo = db.Column(db.String())
+    quiz_id = db.Column(db.Integer(), db.ForeignKey('questionari.id'))
 
 
 # FORMS
+class AddQuestionForm(FlaskForm):
+    submit = SubmitField('+')
 
 
-class QuestionForm(NoCsrfForm):
-    text = StringField(
-        "Title"#validators=[validators.DataRequired("please, enter the question")]
-    )
+class DomandaForm(NoCsrfForm):
+    testo = StringField('Testo della domanda')
 
 
-class QuizForm(FlaskForm):
-    title = StringField("Titolo")
-    questions = FieldList(
-        FormField(QuestionForm, default=lambda: Question()), min_entries=1
-    )
-    submit = SubmitField("salva")
+class SelectDomandaForm(DomandaForm):
+    selezione = SelectField('Category', choices=[('cat1', 'Category 1'), ('cat2', 'Category 2')])
 
 
-# ROUTES
+class QuestionarioForm(FlaskForm):
+    titolo = StringField('Titolo')
+    domande = FieldList(FormField(DomandaForm, default=lambda: Domanda()), min_entries=1)
+    submit = SubmitField('Salva')
 
 
-@app.route("/", methods=["GET", "POST"])
+from commands import create_tables, populate_db, delete_db
+app.cli.add_command(create_tables)
+app.cli.add_command(populate_db)
+app.cli.add_command(delete_db)
+
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    quiz = Quiz.query.filter_by(user_id=1).first()
+    questionario = Questionario.query.filter_by(id=1).first()
+    main_form = QuestionarioForm(obj=questionario)
+    domande = DomandaForm(prefix='domanda-_-')
+    # add_question = AddQuestionForm()
 
-    if len(quiz.questions) == 0:
-        quiz.questions = [Question(testo="domanda?")]
-        flash("question created", "success")
-
-    form = QuizForm()#obj=quiz)
-    domande = QuestionForm(prefix='domanda-_-')
-
-    if form.validate_on_submit():
-
-        # DEBUG
-        print(f"----->[INFO]\n{form.title.data}")
-        print(form.questions.data)
-        print("------------------")
-        # for elem in form.questions.data:
-            # nuova_domanda = Domanda(**elem)
-            # quiz.questions.append(nuova_domanda)
-        form.populate_obj(quiz)
+    if main_form.submit.data and main_form.validate():
+        main_form.populate_obj(questionario)
         db.session.commit()
-        flash("saved changes", "success")
+        flash('modifiche salvate', 'success')
 
-    return render_template(
-        "index.html", form=form, _template=domande, questionario=quiz
-    )
-
-
-@app.route("/delete/<question_id>", methods=["POST"])
-def delete(question_id):
-    domanda = Question.query.filter_by(id=question_id)
-    db.session.delete(domanda)
-    db.session.commit()
-    return redirect(url_for(".index"))
+    return render_template('index.html', questionario=questionario,
+                           _template=domande, main_form=main_form)
 
 
-@app.route("/add/<quiz_id>", methods=["POST"])
-def add(quiz_id):
-    domanda = Question(testo="nuova domanda", quizid=quiz_id)
-    db.session.add(domanda)
-    db.session.commit()
-    return redirect(url_for(".index"))
-
-
-@app.route("/display/<quizid>")
-def display(quizid):
-    questionario = Quiz.query.filter_by(id=quizid)
-    domande = Question.query.filter_by(quiz_id=quizid)
-    return render_template("view.html", module=questionario, dom=domande)
-
-
-if __name__ == "__main__":
-    db.drop_all()
-    db.create_all()
-    mat = Users("Mat")
-    db.session.add(mat)
-    db.session.commit()
-    db.session.add(Quiz("New quiz", 1))
-    db.session.commit()
-    app.run(debug=True, port=5003)
+if __name__ == '__main__':
+    app.run(debug=True, port=5001)
